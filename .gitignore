@@ -1,0 +1,37 @@
+# Local IDE/editor files
+.idea/
+.vscode/
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+
+# Environment and local runtime files
+.env
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated model and notebook outputs
+*.pth
+*.pt
+*.pkl
+*.joblib
+Submission*.csv
+submission*.csv
+
+# Large/generated project artifacts
+runtime-data/
+builds/
+
+# Raw local working copies kept outside the curated GitHub portfolio
+/AI Model/
+/ML-Project-main/
+/industry4-pocs/

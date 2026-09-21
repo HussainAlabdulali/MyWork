@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>IP Address Manager</title>
+    <link rel="stylesheet" href="../static/address.css">
+</head>
+<body>
+<div class="main-wrapper">
+    <div class="navigation">
+        <h1 id="Dashboard-header">Industry 4.0 Dashboard</h1>
+        <nav id="primary_nav_wrap">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/tool-drop">Tool Drop</a></li>
+                <li><a href="/vibration-monitoring">Vibration</a></li>
+                <li><a href="/agv-collision">AGV</a></li>
+                <li><a href="/package-drop">Package Drop</a></li>
+                <li><a href="/worker-fatigue">Worker Fatigue</a></li>
+                <li class="current-menu-item"><a href="/addresses">IP Manager</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="container" style="margin-top: 30px;">
+        <h2>Device ID Manager</h2>
+        <div class="input-container">
+            <input type="text" id="deviceID" placeholder="Enter Device ID">
+            <button onclick="saveID()">Save ID</button>
+        </div>
+    </div>
+
+
+    <div class="container">
+        <h2>IP Address Manager</h2>
+
+        <ul id="addressList"></ul>
+
+        <div class="input-container">
+            <input type="text" id="newAddress" placeholder="Enter IP address (e.g., 192.168.1.1:5000)">
+            <button onclick="addAddress()">Add</button>
+            <button onclick="saveAddresses()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let addresses = [];
+
+    let deviceID = "";
+
+async function loadID() {
+    const res = await fetch('/api/id_display');
+    const text = await res.text();   // plain text from GET
+    deviceID = text || '';
+    document.getElementById('deviceID').value = deviceID;
+}
+
+async function saveID() {
+    const idValue = document.getElementById('deviceID').value.trim();
+    if (!idValue) {
+        alert("Please enter a valid ID");
+        return;
+    }
+    deviceID = idValue;
+
+    const res = await fetch('/api/id_helper', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ID: deviceID })  // JSON POST
+    });
+
+    if (res.ok) {
+        alert("Saved successfully! Please wait 10 seconds before moving to a new page...");
+    } else {
+        alert("Error saving ID");
+    }
+}
+    async function loadAddresses() {
+        const res = await fetch('/api/addresses_helper');
+        const text = await res.text();
+        addresses = text ? text.split(',') : [];
+        renderList();
+    }
+
+    function renderList() {
+        const list = document.getElementById('addressList');
+        list.innerHTML = '';
+        addresses.forEach((addr, index) => {
+            const li = document.createElement('li');
+            li.textContent = addr + " ";
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Delete';
+            delBtn.onclick = () => {
+                addresses.splice(index, 1);
+                renderList();
+            };
+            li.appendChild(delBtn);
+            list.appendChild(li);
+        });
+    }
+
+    function addAddress() {
+        const input = document.getElementById('newAddress');
+        const value = input.value.trim();
+        if (value && !addresses.includes(value)) {
+            addresses.push(value);
+            input.value = '';
+            renderList();
+        }
+    }
+
+    async function saveAddresses() {
+        const res = await fetch('/api/addresses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ addresses: addresses.join(',') })
+
+        });
+        if (res.ok) {
+            alert("Saved successfully! Please wait 10 seconds before moving to a new page...");
+        } else {
+            alert("Error saving addresses");
+        }
+    }
+
+    function isValidIP(ip) {
+        // Regular expression for IPv4 address
+        const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
+        if (!ipRegex.test(ip)) {
+            return false;
+        }
+
+        // Additional validation: split and check each octet
+        const octets = ip.split('.');
+
+        for (let octet of octets) {
+            // Remove leading zeros and check if it's still valid
+            const num = parseInt(octet, 10);
+            if (num < 0 || num > 255) {
+                return false;
+            }
+            // Check for leading zeros (except for "0" itself)
+            if (octet.length > 1 && octet[0] === '0') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function showMessage(text, type) {
+        // Remove existing message if any
+        const existing = document.querySelector('.message');
+        if (existing) {
+            existing.remove();
+        }
+
+        const message = document.createElement('div');
+        message.className = `message ${type}`;
+        message.textContent = text;
+        document.body.appendChild(message);
+
+        // Trigger animation
+        setTimeout(() => message.classList.add('show'), 10);
+
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            message.classList.remove('show');
+            setTimeout(() => message.remove(), 300);
+        }, 3000);
+    }
+
+    document.getElementById('newAddress').addEventListener('input', function(e) {
+let value = e.target.value;
+
+// Allow only digits, dots, and colon
+value = value.replace(/[^0-9.:]/g, '');
+
+// Only one colon allowed for the port separator
+const colonCount = (value.match(/:/g) || []).length;
+if (colonCount > 1) {
+    // Remove extra colons beyond the first
+    const firstColonIndex = value.indexOf(':');
+    value = value.slice(0, firstColonIndex + 1) + value.slice(firstColonIndex + 1).replace(/:/g, '');
+}
+
+// Split IP and port parts
+let [ipPart, portPart] = value.split(':');
+
+// Prevent IP from starting with a dot
+if (ipPart.startsWith('.')) ipPart = ipPart.substring(1);
+
+// Validate and format IP octets
+let parts = ipPart.split('.');
+
+// Limit to 4 parts (octets)
+if (parts.length > 4) {
+    parts.splice(4);
+}
+
+for (let i = 0; i < parts.length; i++) {
+    if (parts[i].length > 0) {
+        // Remove leading zeros except for single "0"
+        parts[i] = parts[i].replace(/^0+/, '') || '0';
+
+        // Limit to 3 digits max
+        if (parts[i].length > 3) {
+            parts[i] = parts[i].substring(0, 3);
+        }
+
+        // Cap at 255
+        const num = parseInt(parts[i], 10);
+        if (num > 255) {
+            parts[i] = '255';
+        }
+    }
+}
+
+ipPart = parts.join('.');
+
+// Prevent ending with dot if 4 octets
+const completeParts = parts.filter(p => p.length > 0);
+if (completeParts.length === 4 && ipPart.endsWith('.')) {
+    ipPart = ipPart.slice(0, -1);
+}
+
+// Validate port part: allow only digits, max 5 digits, cap at 65535
+if (portPart !== undefined) {
+    portPart = portPart.replace(/[^0-9]/g, '').substring(0, 5);
+    if (portPart !== '') {
+        const portNum = parseInt(portPart, 10);
+        if (portNum > 65535) {
+            portPart = '65535';
+        }
+    }
+    value = ipPart + ':' + portPart;
+} else {
+    value = ipPart;
+}
+
+e.target.value = value;
+
+// Visual feedback for validation (using new isValidIPPort function)
+const container = e.target.parentElement;
+if (value && isValidIPPort(value)) {
+    container.classList.add('valid-ip');
+    container.classList.remove('invalid-ip');
+} else if (value) {
+    container.classList.add('invalid-ip');
+    container.classList.remove('valid-ip');
+} else {
+    container.classList.remove('valid-ip', 'invalid-ip');
+}
+});
+
+// Add this function to validate IP + port format
+
+function isValidIPPort(value) {
+// Regex: IP + colon + port (1-65535)
+const regex = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}:(\d{1,5})$/;
+if (!regex.test(value)) return false;
+
+const port = parseInt(value.split(':')[1], 10);
+return port >= 1 && port <= 65535;
+}
+
+
+    loadAddresses();
+    loadID();
+</script>
+</body>
+</html>

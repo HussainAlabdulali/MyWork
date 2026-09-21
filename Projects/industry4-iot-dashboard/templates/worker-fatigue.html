@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Worker Fatigue Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="../static/js/scripts.js"></script>
+    <link rel="stylesheet" href="../static/worker.css"></head>
+</head>
+<body class="p-4">
+
+<div class="navigation">
+    <h1 id="Dashboard-header">Industry 4.0 Dashboard</h1>
+    <nav id="primary_nav_wrap">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/tool-drop">Tool Drop</a></li>
+            <li><a href="/vibration-monitoring">Vibration</a></li>
+            <li><a href="/agv-collision">AGV</a></li>
+            <li><a href="/package-drop">Package Drop</a></li>
+            <li class="current-menu-item"><a href="/worker-fatigue">Worker Fatigue</a></li>
+            <li><a href="/addresses">IP Manager</a></li>
+        </ul>
+    </nav>
+</div>
+
+<div class="container">
+    <h2>Worker Fatigue Monitoring</h2>
+
+    <label for="workerSelect" class="form-label">Select Worker</label>
+    <select id="workerSelect" class="form-select mb-3">
+        <option value="worker1">Worker 1</option>
+        <option value="worker2">Worker 2</option>
+        <option value="worker3">Worker 3</option>
+        <option value="worker4">Worker 4</option>
+    </select>
+
+    <div class="fatigue-section d-flex flex-wrap gap-4 mt-4">
+
+        <div style="display: flex; flex-direction: column; gap: 1.5rem; align-items: center;">
+            <div id="BallContainer">
+                <h3>Fall Detection</h3>
+                <div id="Ball" class="led-ball green"></div>
+            </div>
+
+            <div id="FlameContainer" class="text-center">
+                <h3>Flame Status</h3>
+                <div id="FlameBall" class="led-ball green"></div>
+            </div>
+        </div>
+
+        <img id="fatigueGif" src="" alt="" style="max-width: 250px;"/>
+
+        <div class="mt-4">
+            <canvas id="fatigueChart"></canvas>
+        </div>
+    </div>
+
+    <div id="environmentStatus">
+        <button class="btn btn-secondary" onclick="workerLog()">Export CSV</button>
+        <button class="btn" id="toggleToolDropBtn">Stop Updates</button>
+        <span id="toolDropStatus">Updating</span>
+
+        <div>
+            <strong>Temperature:</strong>
+            <span id="temperature">Loading...</span>
+        </div>
+
+        <div>
+            <strong>Light Level (Lumen):</strong>
+            <span id="light">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        async function fetchTemperature() {
+          try {
+            const response = await fetch('/api/read'); // Adjust to your actual endpoint
+            const data = await response.json();
+
+            // Assume your API returns a field called "temp"
+            const temp = data.temp;
+            const flame = data.flame;
+            const light = data.light;
+            document.getElementById('temperature').textContent = `${temp.toFixed(1)} °C`;
+          } catch (err) {
+            document.getElementById('temperature').textContent = 'Error fetching temperature';
+            console.error(err);
+          }
+        }
+
+        fetchTemperature();  // Call it once on load
+
+        setInterval(fetchTemperature, 500);
+    </script>
+
+    <script>
+        function workerLog() {
+            const link = document.createElement('a');
+            link.href = '/posture-data.csv';
+            link.download = 'posture-data.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
+
+    <script>
+        let toolDropUpdating = true;  // assume updates start enabled
+
+        async function toggleToolDropUpdates() {
+            const action = toolDropUpdating ? 'stop' : 'start';
+
+            try {
+                const response = await fetch('/api/toggle_updates', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ target: 'worker_monitoring', action })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                  toolDropUpdating = data.is_updating;
+
+                  document.getElementById('toggleToolDropBtn').textContent = toolDropUpdating ? 'Stop Updates' : 'Start Updates';
+                  document.getElementById('toolDropStatus').textContent = toolDropUpdating ? 'Updating' : 'Paused';
+                  document.getElementById('toolDropStatus').style.color = toolDropUpdating ? 'green' : 'red';
+                } else {
+                  console.error('Toggle failed:', data.error);
+                }
+            } catch (err) {
+                console.error('Error toggling updates:', err);
+            }
+        }
+
+        // Attach the click handler
+        document.getElementById('toggleToolDropBtn').addEventListener('click', toggleToolDropUpdates);
+    </script>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industry 4.0 PoCs Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="../static/js/scripts.js"></script>
+    <link rel="stylesheet" href="../static/index.css"></head>
+</head>
+<body class="p-4">
+
+<h1 id="Dashboard-header">Industry 4.0 Dashboard</h1>
+
+<nav id="primary_nav_wrap">
+    <div class="navigation">
+        <ul>
+            <li class="current-menu-item"><a href="/">Home</a></li>
+            <li><a href="/tool-drop">Tool Drop</a></li>
+            <li><a href="/vibration-monitoring">Vibration</a></li>
+            <li><a href="/agv-collision">AGV</a></li>
+            <li><a href="/package-drop">Package Drop</a></li>
+            <li><a href="/worker-fatigue">Worker Fatigue</a></li>
+            <li><a href="/addresses">IP Manager</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Clock positioned in top-right
+<div class="clock-position">
+    <div class="clock">
+        <div class="hour"></div>
+        <div class="min"></div>
+        <div class="sec"></div>
+    </div>
+</div>
+-->
+
+<div class="card-container">
+    <a href="/tool-drop" class="card">
+        <img src="../static/pics/cnc.jpeg" alt="Card Image">
+        <div class="card-content">
+            <h3>Smart Tool Drop Detection</h3>
+            <p>Monitor in real-time your CNC/other machines' tool drop sensor detectors.</p>
+        </div>
+    </a>
+
+    <a href="/vibration-monitoring" class="card">
+        <img src="../static/pics/vibration.jpg" alt="Card Image">
+        <div class="card-content">
+            <h3>Machine Vibration Monitoring</h3>
+            <p>Look up data on previous and current vibration values.</p>
+        </div>
+    </a>
+
+    <a href="/agv-collision" class="card">
+        <img src="../static/pics/AGV.jpg" alt="Card Image">
+        <div class="card-content">
+            <h3>AGV Tipping/Collision Detection</h3>
+            <p>Monitor the tipping value of your Automated Guided Vehicles and detect collisions.</p>
+        </div>
+    </a>
+
+    <a href="/package-drop" class="card">
+        <img src="../static/pics/package.jpeg" alt="Card Image">
+        <div class="card-content">
+            <h3>Package Drop Logging</h3>
+            <p>Track which packages were dropped, alongside the force of the drop.</p>
+        </div>
+    </a>
+
+    <a href="/worker-fatigue" class="card">
+        <img src="../static/pics/fatigue.jpg" alt="Card Image">
+        <div class="card-content">
+            <h3>Worker Fatigue Monitoring</h3>
+            <p>Track the current fatigue of your workers, and where.</p>
+        </div>
+    </a>
+</div>
+
+<footer>© Interdisciplinary Research Center for Intelligent Manufacturing & Robotics</footer>
+
+<script>
+    const deg = 6;
+    const hour = document.querySelector(".hour");
+    const min = document.querySelector(".min");
+    const sec = document.querySelector(".sec");
+
+    const setClock = () => {
+        let day = new Date();
+        let hh = day.getHours() * 30;
+        let mm = day.getMinutes() * deg;
+        let ss = day.getSeconds() * deg;
+
+        hour.style.transform = `rotateZ(${hh + mm / 12}deg)`;
+        min.style.transform = `rotateZ(${mm}deg)`;
+        sec.style.transform = `rotateZ(${ss}deg)`;
+    };
+
+    // first time
+    setClock();
+    // Update every 1000 ms
+    setInterval(setClock, 1000);
+
+    const switchTheme = (evt) => {
+        const switchBtn = evt.target;
+        if (switchBtn.textContent.toLowerCase() === "light") {
+            switchBtn.textContent = "dark";
+            document.documentElement.setAttribute("data-theme", "dark");
+        } else {
+            switchBtn.textContent = "light";
+            document.documentElement.setAttribute("data-theme", "light");
+        }
+    };
+
+    const switchModeBtn = document.querySelector(".switch-btn");
+    switchModeBtn.addEventListener("click", switchTheme, false);
+
+    let currentTheme = "light";
+
+    if (currentTheme) {
+        document.documentElement.setAttribute("data-theme", currentTheme);
+        switchModeBtn.textContent = currentTheme;
+    }
+</script>
+</body>
+</html>
