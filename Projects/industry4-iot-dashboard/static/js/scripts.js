@@ -43,7 +43,7 @@ let canNotify = true;
             const filename = `tool_drop_${today}.csv`;
 
             // Fetch the CSV file from server
-            fetch(`/api/download-csv/${filename}`)
+            fetch('/tool-drop-detection.csv')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('No data available for export');
@@ -566,3 +566,4 @@ window.addEventListener('DOMContentLoaded', () => {
     setInterval(window.simulatePackageDrop, 500);
     setInterval(window.simulateAgvCollision, 500);
 });
+

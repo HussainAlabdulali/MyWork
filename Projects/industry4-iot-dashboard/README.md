@@ -40,12 +40,12 @@ The dashboard covers five monitoring scenarios:
 ├── main.py                 # Flask application and API routes
 ├── models.py               # SQLAlchemy data models
 ├── csv_utils.py            # CSV logging and sensor-derived helpers
+├── data/                   # Runtime CSV logs, addresses, and SQLite snapshot
 ├── templates/              # Dashboard pages
 ├── static/                 # CSS, JS, images, and visual assets
 ├── labview-myrio/          # LabVIEW/myRIO acquisition and protocol prototypes
 ├── sample-data/            # Representative validation CSVs
 ├── docs/                   # Trimmed technical report
-├── archive/                # Older prototype code kept for reference
 └── requirements.txt
 ```
 
@@ -64,7 +64,7 @@ myRIO / sensors
 - `docs/Industry4_IoT_Dashboard_Trimmed_Report.docx` summarizes the architecture, implementation, dashboard modules, and validation approach.
 - `labview-myrio/README.md` explains the LabVIEW project files and protocol prototypes.
 
-This portfolio copy excludes local virtual environments, generated deployment builds, raw runtime extracts, SQLite databases, and private working archives.
+This portfolio copy includes the dashboard source, representative runtime CSV logs, the SQLite database snapshot, and visual assets required for the pages to render. It still excludes local virtual environments, generated deployment builds, and private working archives.
 
 ## Run Locally
 
@@ -84,3 +84,5 @@ http://localhost:5000
 ## Notes
 
 The current implementation prioritizes end-to-end hardware integration, real-time dashboard behavior, event logging, and exportable validation data. Future improvements would include cleaner app packaging and a user database.
+
+

@@ -1,9 +1,13 @@
 import math
+import os
 from sqlalchemy import create_engine, Column, Integer, Float, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-DATABASE_URL = "sqlite:///sensors.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DATABASE_URL = "sqlite:///" + os.path.join(DATA_DIR, "sensors.db").replace("\\", "/")
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
@@ -124,3 +128,5 @@ class Worker(Base):
 
 # Recreate all tables
 Base.metadata.create_all(bind=engine)
+
+

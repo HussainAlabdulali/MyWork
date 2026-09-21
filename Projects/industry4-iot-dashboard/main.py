@@ -19,6 +19,31 @@ def get_tilt_angles(x, y, z):
 
 app = Flask(__name__)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def data_file(filename):
+    return os.path.join(DATA_DIR, filename)
+
+
+ADDRESSES_FILE = data_file("addresses.txt")
+DEVICE_ID_FILE = data_file("device-id.txt")
+
+
+def read_text_file(filepath):
+    if not os.path.exists(filepath):
+        return ""
+    with open(filepath, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
+def write_text_file(filepath, value):
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(value.strip())
+
+
 update_flags = {
     'tool_drop': True,
     'package_drop': True,
@@ -174,12 +199,12 @@ def api_read():
             db.close()
 
             # Write raw accel
-            csv_utils.write_accel_to_csv(time_stamp, x, y, z, light, temp, tilt, mag, sound, flame)
+            csv_utils.write_accel_to_csv(time_stamp, x, y, z, light, temp, tilt, mag, sound, flame, filepath=data_file("accel.csv"))
 
 
             try:
-                if os.path.exists('accel.csv'):
-                    df = pd.read_csv('accel.csv')
+                if os.path.exists(data_file('accel.csv')):
+                    df = pd.read_csv(data_file('accel.csv'))
 
                     if not df.empty and 'magnitude' in df.columns:
                         # CSV logs are kept alongside SQLite because they are
@@ -193,7 +218,7 @@ def api_read():
                             'sound': latest_sound
                         }
 
-                        output_file = 'tool-drop-detection.csv'
+                        output_file = data_file('tool-drop-detection.csv')
                         should_add = True
 
                         if os.path.exists(output_file):
@@ -222,7 +247,7 @@ def api_read():
                                 'magnitude': latest_magnitude
                             }
 
-                            full_output_file = 'full-accel-data.csv'
+                            full_output_file = data_file('full-accel-data.csv')
                             should_add_full = True
 
                             if os.path.exists(full_output_file):
@@ -261,7 +286,7 @@ def api_read():
                             'tilt': tilt
                         }
 
-                        agv_file = 'agv-data.csv'
+                        agv_file = data_file('agv-data.csv')
                         if os.path.exists(agv_file) and update_flags['agv']:
                             agv_df = pd.read_csv(agv_file)
                             agv_df = pd.concat([agv_df, pd.DataFrame([agv_entry])], ignore_index=True)
@@ -294,7 +319,7 @@ def api_read():
                                 'temp': temp
                             }
 
-                            posture_file = 'posture-data.csv'
+                            posture_file = data_file('posture-data.csv')
                             if os.path.exists(posture_file) and update_flags['worker_monitoring']:
                                 posture_df = pd.read_csv(posture_file)
                                 posture_df = pd.concat([posture_df, pd.DataFrame([posture_entry])], ignore_index=True)
@@ -317,7 +342,7 @@ def api_read():
                             'temp': temp
                         }
 
-                        collision_file = 'collision-data.csv'
+                        collision_file = data_file('collision-data.csv')
                         if os.path.exists(collision_file) and update_flags['agv']:
                             collision_df = pd.read_csv(collision_file)
                             collision_df = pd.concat([collision_df, pd.DataFrame([collision_entry])], ignore_index=True)
@@ -334,10 +359,10 @@ def api_read():
 
     elif request.method == 'GET':
         try:
-            if not os.path.exists('accel.csv'):
+            if not os.path.exists(data_file('accel.csv')):
                 return jsonify({'error': 'accel.csv file not found', 'status': 'failed'}), 404
 
-            df = pd.read_csv('accel.csv')
+            df = pd.read_csv(data_file('accel.csv'))
             if df.empty:
                 return jsonify({'error': 'accel.csv file is empty', 'status': 'failed'}), 400
             if 'magnitude' not in df.columns:
@@ -345,7 +370,7 @@ def api_read():
 
             latest_magnitude = df['magnitude'].iloc[-1]
 
-            output_file = 'tool-drop-detection.csv'
+            output_file = data_file('tool-drop-detection.csv')
             if os.path.exists(output_file):
                 tool_df = pd.read_csv(output_file)
                 total_records = len(tool_df)
@@ -354,7 +379,7 @@ def api_read():
                 total_records = 0
                 latest_tool_entry = None
 
-            full_output_file = 'full-accel-data.csv'
+            full_output_file = data_file('full-accel-data.csv')
             if os.path.exists(full_output_file):
                 full_df = pd.read_csv(full_output_file)
                 full_total_records = len(full_df)
@@ -404,7 +429,7 @@ def api_read():
 
 @app.route('/api/read')
 def get_tooldrop_data():
-    df = pd.read_csv('accel.csv')
+    df = pd.read_csv(data_file('accel.csv'))
     latest = df.iloc[-1]  # Get the last row
     return jsonify({
         'id': int(latest['id']),
@@ -426,7 +451,7 @@ def get_tooldrop_data():
 @app.route('/tool-drop-detection.csv')
 def tool_drop_data_csv():
     try:
-        return send_file("tool-drop-detection.csv", as_attachment=True)
+        return send_file(data_file("tool-drop-detection.csv"), as_attachment=True, download_name="tool-drop-detection.csv")
     except FileNotFoundError:
         return "Collision data not found", 404
 
@@ -435,14 +460,14 @@ def tool_drop_data_csv():
 def download_full_accel_csv():
     try:
         # Check if file exists
-        if not os.path.exists('full-accel-data.csv'):
+        if not os.path.exists(data_file('full-accel-data.csv')):
             return jsonify({
                 'error': 'Full accelerometer data CSV file not found',
                 'status': 'failed'
             }), 404
 
         # Send the file
-        return send_file('full-accel-data.csv',
+        return send_file(data_file('full-accel-data.csv'),
                          mimetype='text/csv',
                          as_attachment=False)
 
@@ -455,15 +480,15 @@ def download_full_accel_csv():
 
 @app.route('/agv-data.csv', methods=['GET'])
 def download_agv_csv():
-    if not os.path.exists('agv-data.csv'):
+    if not os.path.exists(data_file('agv-data.csv')):
         return jsonify({'error': 'AGV data file not found', 'status': 'failed'}), 404
-    return send_file('agv-data.csv', mimetype='text/csv', as_attachment=False)
+    return send_file(data_file('agv-data.csv'), mimetype='text/csv', as_attachment=False)
 
 
 @app.route('/collision-data.csv')
 def export_collision_csv():
     try:
-        return send_file("collision-data.csv", as_attachment=True)
+        return send_file(data_file("collision-data.csv"), as_attachment=True, download_name="collision-data.csv")
     except FileNotFoundError:
         return "Collision data not found", 404
 
@@ -471,7 +496,7 @@ def export_collision_csv():
 @app.route('/posture-data.csv')
 def posture_data_csv():
     try:
-        return send_file("posture-data.csv", as_attachment=True)
+        return send_file(data_file("posture-data.csv"), as_attachment=True, download_name="posture-data.csv")
     except FileNotFoundError:
         return "Collision data not found", 404
 
@@ -504,13 +529,14 @@ def update_addresses():
         data = request.get_json(silent=True)
         if data and 'addresses' in data:
             addresses_str = data['addresses'].strip()
+            write_text_file(ADDRESSES_FILE, addresses_str)
             print(1, addresses_str)
             return "OK", 200
 
         return "Bad Request: Missing 'addresses' field", 400
 
     # GET method handling here...
-    return addresses_str
+    return addresses_str or read_text_file(ADDRESSES_FILE)
 
 
 addresses_str2 = ""
@@ -523,13 +549,14 @@ def addresses_helper():
     if request.method == 'POST':
         if 'addresses' in request.form:
             addresses_str2 = request.form['addresses'].strip()
+            write_text_file(ADDRESSES_FILE, addresses_str2)
             print("[myRIO data received]", addresses_str2)
             return "OK", 200
         else:
             return "Bad Request: Missing 'addresses' field", 400
 
     # GET request — return the stored string
-    return addresses_str2
+    return addresses_str2 or addresses_str or read_text_file(ADDRESSES_FILE)
 
 addresses_str3 = ""
 
@@ -541,13 +568,14 @@ def id_helper():
         data = request.get_json(silent=True)
         if data and 'ID' in data:
             addresses_str3 = data['ID'].strip()
+            write_text_file(DEVICE_ID_FILE, addresses_str3)
             print("[myRIO data received id]", addresses_str3)
             return "OK", 200
         else:
             return "Bad Request: Missing 'ID' field", 400
 
     # GET request — return the stored string
-    return addresses_str3
+    return addresses_str3 or read_text_file(DEVICE_ID_FILE)
 
 addresses_str4 = ""  # global variable to store the single ID
 
@@ -558,12 +586,16 @@ def id_display():
     if request.method == 'POST':
         if 'ID' in request.form:
             addresses_str4 = request.form['ID'].strip()
+            write_text_file(DEVICE_ID_FILE, addresses_str4)
             print("[myRIO data received id]", addresses_str4)
             return "OK", 200
         else:
             return "Bad Request: Missing 'ID' field", 400
-    return addresses_str4
+    return addresses_str4 or addresses_str3 or read_text_file(DEVICE_ID_FILE)
 
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True)
+
+
+
